@@ -1,32 +1,40 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, ViewChild } from '@angular/core';
+import { NavigationEnd, Router, RouterEvent } from '@angular/router';
+import { filter, take, tap } from 'rxjs/operators';
 import { MenuComponent } from './components/menu/menu.component';
 
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
 })
-export class AppComponent implements OnInit {
+export class AppComponent {
   @ViewChild(MenuComponent, {static: false}) theMenu;
   searchString = '';
   savedSearchString = '';
 
-  ngOnInit() {
-  }
-
   openSidebar() {
     this.theMenu.openSidebar();
   }
+
+  constructor(private router: Router) {}
 
   onSearchChanged(searchString: string) {
     this.searchString = searchString;
   }
 
   saveSearchString() {
-    // if a search result is clicked, give time to change route
-    setTimeout(() => {
-      this.savedSearchString = this.searchString;
-      this.searchString = null;
-    }, 100);
+    // this method needs to wait the route to change before setting the searchString to null
+
+    this.router.events
+      .pipe(
+        filter((event: RouterEvent) => event instanceof NavigationEnd), // waits for NavigationEnd event
+        take(1), // takes the first NavigationEnd event
+        tap((event: RouterEvent) => {
+          this.savedSearchString = this.searchString;
+          this.searchString = null;
+        })
+      )
+      .subscribe();
   }
 
   restoreSearchString() {
